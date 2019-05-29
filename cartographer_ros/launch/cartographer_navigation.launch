@@ -1,0 +1,40 @@
+<launch>
+    <param name="use_sim_time" value="false"/>
+    
+    <!-- Start the autolabor controller -->
+    <include file="$(find autolabor_pro1_driver)/launch/driver.launch"/>
+    <include file="$(find autolabor_pro1_description)/launch/auto_pro1_laser.launch" />
+
+    <!-- run the laser driver -->
+    <include file="$(find autolabor_pro1_driver)/launch/urg04lx_lidar.launch"/>
+
+    <!-- run the map_server -->
+    <node name="map_sever" pkg="map_server" type="map_server" args="$(find cartographer_ros)/maps/good.yaml"/>
+    
+    <!-- run the move_base to control the robot -->
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+        <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
+        <rosparam file="$(find autolabor_pro1_nav)/config/move_base_params.yaml" command="load" />
+	    <rosparam file="$(find autolabor_pro1_nav)/config/global_costmap_params.yaml" command="load" ns="global_costmap"/>
+	    <rosparam file="$(find autolabor_pro1_nav)/config/local_costmap_params.yaml" command="load" ns="local_costmap"/>
+	    <rosparam file="$(find autolabor_pro1_nav)/config/global_planner_params.yaml" command="load" ns="GlobalPlanner"/>
+	    <rosparam file="$(find autolabor_pro1_nav)/config/0/base_local_planner_params.yaml" command="load" ns="TrajectoryPlannerROS"/>
+    </node>
+
+    <!-- pulish the transform from laser to base_footprint -->
+    <node pkg="tf" type="static_transform_publisher" name="laser_base" args="0.136 0 0 0 0 0 base_footprint laser 50"/>
+
+    <!--amcl-->
+    <include file = "$(find autolabor_pro1_nav)/launch/auto_amcl.launch" />
+
+    <!-- record point -->
+    <node pkg="cartographer_ros" type="get_point.py" name="point_manager"/>
+
+    <!-- auto patrol -->
+    <node pkg="cartographer_ros" type="todo_patrol_nav.py" name="auto_patrol"/>
+
+    <!-- voice command -->
+    <include file="$(find baidu_speech)/launch/simple_voice.launch"/>
+	<node name="rviz" pkg="rviz" type="rviz" required="true"
+      args="-d $(find autolabor_pro1_nav)/amcl.rviz" />
+</launch>

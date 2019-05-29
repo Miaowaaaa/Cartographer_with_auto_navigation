@@ -1,0 +1,22 @@
+<launch>
+  <!-- <param name="/use_sim_time" value="false"/> -->
+  <node name="cartographer_node" pkg="cartographer_ros"
+      type="cartographer_node" args="
+          -configuration_directory $(find cartographer_ros)/configuration_files
+          -configuration_basename urg04lx.lua"
+      output="screen">
+      <remap from="/odom" to="/mobile_odom"/>
+  </node>
+  <include file = "$(find autolabor_pro1_description)/launch/auto_pro1_laser.launch" />
+  <!-- <include file="$(find autolabor_pro1_driver)/launch/driver.launch"/> -->
+
+  <!-- <include file="$(find autolabor_pro1_driver)/launch/keyboard_move.launch"/> -->
+  <!-- <node name="tele_key_twist" pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" output="screen">
+        <param name="speed" value="0.2" />
+        <param name="turn" value="0.3" />
+  </node> -->
+  <include file="$(find autolabor_pro1_driver)/launch/urg04lx_lidar.launch"/>
+  <node pkg="tf" type="static_transform_publisher" name="laser_base" args="0.136 0 0 0 0 0 base_footprint laser 50"/>
+  <node name="rviz" pkg="rviz" type="rviz" required="true"
+      args="-d $(find cartographer_ros)/configuration_files/demo_2d.rviz" />
+</launch>
