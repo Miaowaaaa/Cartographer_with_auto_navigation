@@ -16,6 +16,7 @@ import rospy
 import random
 import actionlib
 import time
+import re
 from actionlib_msgs.msg import *
 from geometry_msgs.msg import Pose, Point, Quaternion,PoseWithCovarianceStamped
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -35,6 +36,9 @@ class PatrolNav():
         self.patrol_type   = rospy.get_param("~patrol_type", 0)
         self.patrol_loop   = rospy.get_param("~patrol_loop", 2)
         self.patrol_time   = rospy.get_param("~patrol_time", 5)
+        
+        self.patrol_file = "/home/Miaow/loc.txt"
+        self.labels_file = "/home/Miaow/labels.txt"
 
          # Goal state return values
         self.goal_states = ['PENDING', 'ACTIVE', 'PREEMPTED', 'SUCCEEDED', 'ABORTED',
@@ -60,7 +64,8 @@ class PatrolNav():
         self.voice_reg_sub = rospy.Subscriber("/reg_result",String,self.voice_command)
         
         # read points from data file
-        self.read_goals()
+        self.read_goals(self.locations,self.patrol_file)
+        self.read_goals(self.cood,self.labels_file)
         # init robot pose publisher
         self.init_pose_pub = rospy.Publisher("/initialpose",PoseWithCovarianceStamped,queue_size=1)
         self.init_pose()
@@ -80,48 +85,47 @@ class PatrolNav():
         """ 
         voice command
         """
+        self.read_goals(self.cood,self.labels_file)
         self.is_stop = True
-        if "301" in data.data:
-            self.send_goal("1")
-            finish_time = self.move_base.wait_for_result(rospy.Duration(300))
-            if not finish_time:
-                state = self.move_base.get_state()
-                if state == GoalStatus.SUCCEEDED:
-                    self.is_stop = False
-                    rospy.loginfo("Goal succeeded!")
+        regex = re.compile("[a-zA-Z0-9]+")
+        label = regex.findall(data.data)
+        for l in label:
+            if self.cood[l]:
+                self.send_goal(self.cood,l)
+                finish_time = self.move_base.wait_for_result(rospy.Duration(300))
+                if not finish_time:
+                    state = self.move_base.get_state()
+                    if state == GoalStatus.SUCCEEDED:
+                        rospy.loginfo("Goal succeeded!")
+                    else:
+                        rospy.logerr("Goal failed with error code:"+str(self.goal_states[state]))
                 else:
-                    self.is_stop = False
-                    rospy.logerr("Goal failed with error code:"+str(self.goal_states[state]))
+                    rospy.logwarn("Time out! can't get the goal")
             else:
-                self.is_stop = False
-                rospy.logwarn("Time out! can't get the goal")
-        else:
-            self.is_stop = False
-            rospy.logwarn("Current map doesn't have the target goal")
+                rospy.logwarn("Current map doesn't have the target goal")
+        self.is_stop = False
    
-    def read_goals(self):
-        self.locations = dict()
-        self.cood  = dict()
-        if not os.path.exists('/home/Miaow/loc.txt'):
-            rospy.logerr('loctions do not exits')
+    def read_goals(self,dictionary,filepath):
+        dictionary = dict()
+        if not os.path.exists(filepath):
+            rospy.logerr(filepath)
             return
-        f = open('/home/Miaow/loc.txt','r') 
+        f = open(filepath,'r') 
         for line in f.readlines(): 
             line = line.strip()
             tmp = line.split(' ',1)
             k =tmp[0]
             v = tmp[1]
             v  =  v.strip('[').strip(']').split(', ') 
-            self.cood[k]= v
             for i in range(len(v)):
                 v[i]=float(v[i])
-            self.locations[k] = Pose(Point(v[0],v[1], v[2]), Quaternion(v[3],v[4],v[5],v[6]))
+            dictionary[k] = Pose(Point(v[0],v[1], v[2]), Quaternion(v[3],v[4],v[5],v[6]))
         f.close()
 
     def begin_navigation(self,req):
         
         # first, read goals
-        self.read_goals()
+        self.read_goals(self.locations,self.patrol_file)
 
         rospy.loginfo("Starting position navigation")
         # Variables to keep track of success rate, running time etc.
@@ -140,7 +144,7 @@ class PatrolNav():
             #judge if set keep_patrol is true
             if self.keep_patrol == False:
                 if self.patrol_type == 0: #use patrol_loop
-                    if target_num == locations_cnt :
+                    if target_num == locations_cnt :   # finish a loop
                       if loop_cnt < self.patrol_loop-1:
                         target_num = 0
                         loop_cnt  += 1
@@ -159,7 +163,7 @@ class PatrolNav():
             # Get the next location in the current sequence
             location = sequeue[target_num]
             rospy.loginfo("Going to: " + str(location))
-            self.send_goal(location)
+            self.send_goal(self.locations,location)
 
             # Increment the counters
             target_num += 1
@@ -193,15 +197,15 @@ class PatrolNav():
             if self.keep_patrol == False and self.patrol_type == 1: #use patrol_time
                 if running_time >= self.patrol_time:
                     rospy.logwarn("Now reach patrol_time, back to original position...")
-                    self.send_goal('six')
+                    self.send_goal(self.locations,'six')
                     rospy.signal_shutdown('Quit')          
         return []
         
 
-    def send_goal(self, locate):
+    def send_goal(self, dictionary,locate):
         # Set up the next goal location
         self.goal = MoveBaseGoal()
-        self.goal.target_pose.pose = self.locations[locate]
+        self.goal.target_pose.pose = dictionary[locate]
         self.goal.target_pose.header.frame_id = 'map'
         self.goal.target_pose.header.stamp = rospy.Time.now()
         self.move_base.send_goal(self.goal) #send goal to move_base
