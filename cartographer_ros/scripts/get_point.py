@@ -9,7 +9,7 @@ import os
 import tf
 from actionlib_msgs.msg import *
 from geometry_msgs.msg import *
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool,String
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 
@@ -89,7 +89,7 @@ class DictOp:
             self.label_cood[self.label] = [data.pose.position.x,data.pose.position.y,data.pose.position.z,\
                                                     data.pose.orientation.x,data.pose.orientation.y,data.pose.orientation.z,data.pose.orientation.w]
             self.label = None
-            self.save(self.label_cood,self.label_file)
+            self.save(self.label_cood,self.labelsfile)
             return
         if len(self.cood)>0:
             self.cood[str(len(self.cood)+1)]= [data.pose.position.x,data.pose.position.y,data.pose.position.z,\

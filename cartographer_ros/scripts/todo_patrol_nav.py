@@ -34,7 +34,7 @@ class PatrolNav():
         self.keep_patrol   = rospy.get_param("~keep_patrol",   False)
         self.random_patrol = rospy.get_param("~random_patrol", False)
         self.patrol_type   = rospy.get_param("~patrol_type", 0)
-        self.patrol_loop   = rospy.get_param("~patrol_loop", 2)
+        self.patrol_loop   = rospy.get_param("~patrol_loop", 1)
         self.patrol_time   = rospy.get_param("~patrol_time", 5)
         
         self.patrol_file = "/home/Miaow/loc.txt"
@@ -64,8 +64,8 @@ class PatrolNav():
         self.voice_reg_sub = rospy.Subscriber("/reg_result",String,self.voice_command)
         
         # read points from data file
-        self.read_goals(self.locations,self.patrol_file)
-        self.read_goals(self.cood,self.labels_file)
+        self.locations = self.read_goals(self.patrol_file)
+        self.cood = self.read_goals(self.labels_file)
         # init robot pose publisher
         self.init_pose_pub = rospy.Publisher("/initialpose",PoseWithCovarianceStamped,queue_size=1)
         self.init_pose()
@@ -85,12 +85,13 @@ class PatrolNav():
         """ 
         voice command
         """
-        self.read_goals(self.cood,self.labels_file)
+        self.cood = self.read_goals(self.labels_file)
         self.is_stop = True
         regex = re.compile("[a-zA-Z0-9]+")
         label = regex.findall(data.data)
         for l in label:
-            if self.cood[l]:
+            rospy.loginfo("parse data is %s.",l)
+            if l in self.cood.keys():
                 self.send_goal(self.cood,l)
                 finish_time = self.move_base.wait_for_result(rospy.Duration(300))
                 if not finish_time:
@@ -103,9 +104,22 @@ class PatrolNav():
                     rospy.logwarn("Time out! can't get the goal")
             else:
                 rospy.logwarn("Current map doesn't have the target goal")
+        #Go back
+        self.send_goal(self.locations,"1")
+        finished_within_time = self.move_base.wait_for_result(rospy.Duration(300))
+        # Check for success or failure
+        if not finished_within_time:
+            self.move_base.cancel_goal()
+            rospy.logerr("ERROR:Cannot go back!")
+        else:
+            state = self.move_base.get_state()
+            if state == GoalStatus.SUCCEEDED:
+                rospy.loginfo("Go Back!")
+            else:
+                rospy.logerr("Go Back failed with error code:"+str(self.goal_states[state]))
         self.is_stop = False
    
-    def read_goals(self,dictionary,filepath):
+    def read_goals(self,filepath):
         dictionary = dict()
         if not os.path.exists(filepath):
             rospy.logerr(filepath)
@@ -119,13 +133,14 @@ class PatrolNav():
             v  =  v.strip('[').strip(']').split(', ') 
             for i in range(len(v)):
                 v[i]=float(v[i])
-            dictionary[k] = Pose(Point(v[0],v[1], v[2]), Quaternion(v[3],v[4],v[5],v[6]))
+            dictionary[k] = Pose(Point(v[0],v[1],v[2]), Quaternion(v[3],v[4],v[5],v[6]))
         f.close()
+        return dictionary
 
     def begin_navigation(self,req):
         
         # first, read goals
-        self.read_goals(self.locations,self.patrol_file)
+        self.locations = self.read_goals(self.patrol_file)
 
         rospy.loginfo("Starting position navigation")
         # Variables to keep track of success rate, running time etc.
@@ -145,14 +160,13 @@ class PatrolNav():
             if self.keep_patrol == False:
                 if self.patrol_type == 0: #use patrol_loop
                     if target_num == locations_cnt :   # finish a loop
-                      if loop_cnt < self.patrol_loop-1:
-                        target_num = 0
-                        loop_cnt  += 1
-                        rospy.logwarn("Left patrol loop cnt: %d", self.patrol_loop-loop_cnt)
-                      else:
-                        rospy.logwarn("Now patrol loop over, exit...")
-                        rospy.signal_shutdown('Quit')
-                        break
+                        if loop_cnt < self.patrol_loop-1:
+                            target_num = 0
+                            loop_cnt  += 1
+                            rospy.logwarn("Left patrol loop cnt: %d", self.patrol_loop-loop_cnt)
+                        else:
+                            rospy.logwarn("Now patrol loop over, exit...")
+                            break
             else:
                 if self.random_patrol == False:
                     if target_num == locations_cnt:
@@ -198,7 +212,20 @@ class PatrolNav():
                 if running_time >= self.patrol_time:
                     rospy.logwarn("Now reach patrol_time, back to original position...")
                     self.send_goal(self.locations,'six')
-                    rospy.signal_shutdown('Quit')          
+                    break
+        self.send_goal(self.locations,"1")
+        finished_within_time = self.move_base.wait_for_result(rospy.Duration(300))
+        # Check for success or failure
+        if not finished_within_time:
+            self.move_base.cancel_goal()
+            rospy.logerr("ERROR:Cannot go back!")
+        else:
+            state = self.move_base.get_state()
+            if state == GoalStatus.SUCCEEDED:
+                n_successes += 1
+                rospy.loginfo("Go Back!")
+            else:
+                rospy.logerr("Go Back failed with error code:"+str(self.goal_states[state]))
         return []
         
 
