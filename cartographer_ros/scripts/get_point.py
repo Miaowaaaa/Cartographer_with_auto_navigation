@@ -24,7 +24,7 @@ class DictOp:
         self.read_goals(self.label_cood,self.labelsfile)
         self.label = None
         self.load_ori_point = rospy.Subscriber("/amcl_pose",PoseWithCovarianceStamped,self.keep_origin_loc)
-        self.add_new_point = rospy.Subscriber("/move_base_simple/goal",PoseStamped,self.addTo_goal)
+        self.add_new_point = rospy.Subscriber("/my_nav_goal",PoseStamped,self.addTo_goal)
         self.add_new_label = rospy.Subscriber("/point_label",String,self.add_label)
         # Subscriber for clear goals
         self.clear_all_point = rospy.Subscriber("/clear_nav_point",Bool,self.clear_goals)
