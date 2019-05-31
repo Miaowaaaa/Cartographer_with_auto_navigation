@@ -25,14 +25,14 @@
     <node pkg="tf" type="static_transform_publisher" name="laser_base" args="0.136 0 0 0 0 0 base_footprint laser 50"/>
 
     <!--amcl-->
-    <include file = "$(find autolabor_pro1_nav)/launch/auto_amcl.launch" />
+    <include file="$(find autolabor_pro1_nav)/launch/auto_amcl.launch" />
 
-    <!-- record point -->
-    <node pkg="cartographer_ros" type="get_point.py" name="point_manager"/>
+    <!-- get points  -->
+    <include file="$(find cartographer_ros)/launch/get_point.launch"/>
 
     <!-- auto patrol -->
-    <node pkg="cartographer_ros" type="todo_patrol_nav.py" name="auto_patrol"/>
-
+    <node pkg="cartographer_ros" type="todo_patrol_nav.py" name="auto_patrol" output="screen"/>
+    
     <!-- voice command -->
     <include file="$(find baidu_speech)/launch/simple_voice.launch"/>
 	<node name="rviz" pkg="rviz" type="rviz" required="true"

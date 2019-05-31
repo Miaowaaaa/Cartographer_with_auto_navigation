@@ -1,0 +1,4 @@
+<launch>
+    <!-- record point -->
+    <node pkg="cartographer_ros" type="get_point.py" name="set_points" output="screen"/>
+</launch>

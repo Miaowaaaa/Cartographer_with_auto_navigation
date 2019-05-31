@@ -15,8 +15,9 @@ import sys
 import rospy
 import random
 import actionlib
+import time
 from actionlib_msgs.msg import *
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import Pose, Point, Quaternion,PoseWithCovarianceStamped
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_srvs.srv import Empty
 from std_msgs.msg import String
@@ -24,7 +25,7 @@ from std_msgs.msg import String
 class PatrolNav():
 
     def __init__(self):
-        rospy.init_node('patrol_nav_node', anonymous=False)
+        rospy.init_node('auto_patrol', anonymous=False)
         rospy.on_shutdown(self.shutdown)
 
         # From launch file get parameters
@@ -57,10 +58,26 @@ class PatrolNav():
 
         # Subscribe to the voice regnization
         self.voice_reg_sub = rospy.Subscriber("/reg_result",String,self.voice_command)
-
-    
-    def voice_command(self,data):
+        
+        # read points from data file
+        self.read_goals()
+        # init robot pose publisher
+        self.init_pose_pub = rospy.Publisher("/initialpose",PoseWithCovarianceStamped,queue_size=1)
+        self.init_pose()
+        
+    def init_pose(self):
         """
+        init robot pose in the exist map
+        """
+        init_pose = PoseWithCovarianceStamped()
+        init_pose.header.frame_id = 'map'
+        init_pose.header.stamp = rospy.Time().now()
+        init_pose.pose.pose = self.locations["1"]
+        time.sleep(2)
+        self.init_pose_pub.publish(init_pose)
+        
+    def voice_command(self,data):
+        """ 
         voice command
         """
         self.is_stop = True
@@ -75,7 +92,12 @@ class PatrolNav():
                 else:
                     self.is_stop = False
                     rospy.logerr("Goal failed with error code:"+str(self.goal_states[state]))
-
+            else:
+                self.is_stop = False
+                rospy.logwarn("Time out! can't get the goal")
+        else:
+            self.is_stop = False
+            rospy.logwarn("Current map doesn't have the target goal")
    
     def read_goals(self):
         self.locations = dict()
@@ -97,16 +119,18 @@ class PatrolNav():
         f.close()
 
     def begin_navigation(self,req):
+        
+        # first, read goals
         self.read_goals()
-        rospy.loginfo("Starting position navigation")
 
+        rospy.loginfo("Starting position navigation")
         # Variables to keep track of success rate, running time etc.
         loop_cnt = 0
         n_goals  = 0
         n_successes  = 0
         target_num   = 0
         running_time = 0
-        location   = ""
+        location = ""
         start_time = rospy.Time.now()
         locations_cnt = len(self.locations)
         sequeue = list(self.locations.keys())
@@ -130,7 +154,7 @@ class PatrolNav():
                     if target_num == locations_cnt:
                         target_num = 0
                 else:
-                    target_num = random.randint(0, locations_cnt-1)
+                    target_num = random.randint(0, locations_cnt - 1)
 
             # Get the next location in the current sequence
             location = sequeue[target_num]
@@ -170,7 +194,8 @@ class PatrolNav():
                 if running_time >= self.patrol_time:
                     rospy.logwarn("Now reach patrol_time, back to original position...")
                     self.send_goal('six')
-                    rospy.signal_shutdown('Quit')
+                    rospy.signal_shutdown('Quit')          
+        return []
         
 
     def send_goal(self, locate):

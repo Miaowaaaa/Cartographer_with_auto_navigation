@@ -1,8 +1,12 @@
 #!/usr/bin/env python
+'''
+This node is used to record patrol points labelled on rviz map.
+'''
 import rospy
 import random
 import actionlib
 import os
+import tf
 from actionlib_msgs.msg import *
 from geometry_msgs.msg import *
 from std_msgs.msg import Bool
@@ -11,15 +15,16 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 class DictOp:
     def __init__(self):
-        rospy.init_node('dic_op_node', anonymous=True)
         self.cood = dict()
-        self.file = rospy.get_param("~data_file","loc.txt")
+        self.first = True
+        self.file = "/home/Miaow/loc.txt"
         self.load_ori_point = rospy.Subscriber("/amcl_pose",PoseWithCovarianceStamped,self.keep_origin_loc)
         self.add_new_point = rospy.Subscriber("/move_base_simple/goal",PoseStamped,self.addTo_goal)
 
         # Subscriber for clear goals
         self.clear_all_point = rospy.Subscriber("/clear_nav_point",Bool,self.clear_goals)
-    
+        rospy.spin()
+        
     def read_goals(self):
         """
         read goals from data file
@@ -32,7 +37,7 @@ class DictOp:
         for line in f.readlines(): 
             line = line.strip()
             tmp = line.split(' ',1)
-            k =tmp[0]
+            k = tmp[0]
             v = tmp[1]
             v  =  v.strip('[').strip(']').split(', ') 
             for i in range(len(v)):
@@ -58,6 +63,7 @@ class DictOp:
         """
         save the origin and goals to the file
         """
+        
         f = open(self.file,"w")
         for k,v in self.cood.items():
             f.write(str(k)+' '+str(v)+'\n')
@@ -72,13 +78,16 @@ class DictOp:
         
 
     def keep_origin_loc(self,data):
+        if self.first:
+            self.first = False
+            return
         self.cood["1"]=[data.pose.pose.position.x,data.pose.pose.position.y,data.pose.pose.position.z,\
                                                     data.pose.pose.orientation.x,data.pose.pose.orientation.y,data.pose.pose.orientation.z,data.pose.pose.orientation.w]
         self.save()
     
 if __name__ == '__main__':
+    rospy.init_node('point_recorder', anonymous=False)
     try:
         DictOp()
-        rospy.spin()
     except rospy.ROSInterruptException:
         rospy.logwarn("Dict exception finished.")
