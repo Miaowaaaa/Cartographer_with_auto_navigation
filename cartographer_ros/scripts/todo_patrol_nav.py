@@ -91,8 +91,13 @@ class PatrolNav():
         label = regex.findall(data.data)
         for l in label:
             rospy.loginfo("parse data is %s.",l)
-            if l in self.cood.keys():
-                self.send_goal(self.cood,l)
+            if len(l) == 4 and l[0] == '1':
+                key = "e" + l[1:]
+            else:
+                key = l.lower()
+            rospy.loginfo("Target is %s.",key)
+            if key in self.cood.keys():
+                self.send_goal(self.cood,key)
                 finish_time = self.move_base.wait_for_result(rospy.Duration(300))
                 if not finish_time:
                     state = self.move_base.get_state()
