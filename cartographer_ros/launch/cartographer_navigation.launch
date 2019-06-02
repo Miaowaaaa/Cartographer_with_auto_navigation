@@ -31,7 +31,10 @@
     <include file="$(find cartographer_ros)/launch/get_point.launch"/>
 
     <!-- auto patrol -->
-    <node pkg="cartographer_ros" type="todo_patrol_nav.py" name="auto_patrol" output="screen"/>
+    <node pkg="cartographer_ros" type="todo_patrol_nav.py" name="auto_patrol" output="screen">
+        <param name="semantic_point_file" value="/home/Miaow/labels.txt"/>
+        <param name="patrol_point_file" value="/home/Miaow/loc.txt"/>
+    </node>
     
     <!-- voice command -->
     <include file="$(find baidu_speech)/launch/simple_voice.launch"/>

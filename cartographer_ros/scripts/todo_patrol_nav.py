@@ -1,15 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-
-# Description:
-# 在地图上指定6个坐标点作为巡逻点,可以在这些点
-# 之间进行不断的巡逻,也可以指定巡逻的圈数,当到
-# 达指定的圈数后就会停止运行.该patrol_nav_node,
-# 是通过向MoveBaseGoal的target_pose中发布目标
-# 位姿来达到巡航的目的,根据move_base的action状态
-# 来判断机器人是否到达了目标位置.当到达了目标位置
-# 后取出下一个目标位姿进行导航.直到字典存储的所有
-# 目标位姿都到达后,就认为巡航一圈结束了.
 import os
 import sys
 import rospy
@@ -37,8 +27,8 @@ class PatrolNav():
         self.patrol_loop   = rospy.get_param("~patrol_loop", 1)
         self.patrol_time   = rospy.get_param("~patrol_time", 5)
         
-        self.patrol_file = "/home/Miaow/loc.txt"
-        self.labels_file = "/home/Miaow/labels.txt"
+        self.patrol_file   = rospy.get_param("~patrol_point_file","/home/Miaow/loc.txt")
+        self.labels_file   = rospy.get_param("~semantic_point_file","/home/Miaow/labels.txt")
 
          # Goal state return values
         self.goal_states = ['PENDING', 'ACTIVE', 'PREEMPTED', 'SUCCEEDED', 'ABORTED',
