@@ -97,6 +97,7 @@ class PatrolNav():
                 key = l.lower()
             rospy.loginfo("Target is %s.",key)
             if key in self.cood.keys():
+                rospy.loginfo(key)
                 self.send_goal(self.cood,key)
                 finish_time = self.move_base.wait_for_result(rospy.Duration(300))
                 if not finish_time:
@@ -110,19 +111,19 @@ class PatrolNav():
             else:
                 rospy.logwarn("Current map doesn't have the target goal")
         #Go back
-        self.send_goal(self.locations,"1")
-        finished_within_time = self.move_base.wait_for_result(rospy.Duration(300))
-        # Check for success or failure
-        if not finished_within_time:
-            self.move_base.cancel_goal()
-            rospy.logerr("ERROR:Cannot go back!")
-        else:
-            state = self.move_base.get_state()
-            if state == GoalStatus.SUCCEEDED:
-                rospy.loginfo("Go Back!")
-            else:
-                rospy.logerr("Go Back failed with error code:"+str(self.goal_states[state]))
-        self.is_stop = False
+        # self.send_goal(self.locations,"1")
+        # finished_within_time = self.move_base.wait_for_result(rospy.Duration(300))
+        # # Check for success or failure
+        # if not finished_within_time:
+        #     self.move_base.cancel_goal()
+        #     rospy.logerr("ERROR:Cannot go back!")
+        # else:
+        #     state = self.move_base.get_state()
+        #     if state == GoalStatus.SUCCEEDED:
+        #         rospy.loginfo("Go Back!")
+        #     else:
+        #         rospy.logerr("Go Back failed with error code:"+str(self.goal_states[state]))
+        # self.is_stop = False
    
     def read_goals(self,filepath):
         dictionary = dict()
@@ -193,7 +194,7 @@ class PatrolNav():
             # Check for success or failure
             if not finished_within_time:
                 self.move_base.cancel_goal()
-                rospy.logerr("ERROR:Timed out achieving goal")
+                rospy.logerr("ERROR: Timed out achieving goal")
             else:
                 state = self.move_base.get_state()
                 if state == GoalStatus.SUCCEEDED:
@@ -218,12 +219,13 @@ class PatrolNav():
                     rospy.logwarn("Now reach patrol_time, back to original position...")
                     self.send_goal(self.locations,'six')
                     break
+        
         self.send_goal(self.locations,"1")
         finished_within_time = self.move_base.wait_for_result(rospy.Duration(300))
         # Check for success or failure
         if not finished_within_time:
             self.move_base.cancel_goal()
-            rospy.logerr("ERROR:Cannot go back!")
+            rospy.logerr("ERROR: Cannot go back!")
         else:
             state = self.move_base.get_state()
             if state == GoalStatus.SUCCEEDED:

@@ -56,7 +56,7 @@ origin_y: -2.5
 #############################
 inflation_layer:
 # The radius in meters to which the map inflates obstacle cost values. (double, default: 0.55)
-  inflation_radius: 0.45
+  inflation_radius: 0.60
 
 # A scaling factor to apply to cost values during inflation. The cost function is computed as follows for all cells in the costmap further than the inscribed radius distance and closer than the inflation radius distance away from an actual obstacle: exp(-1.0 * cost_scaling_factor * (distance_from_obstacle - inscribed_radius)) * (costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 1), where costmap_2d::INSCRIBED_INFLATED_OBSTACLE is currently 254. NOTE: since the cost_scaling_factor is multiplied by a negative in the formula, increasing the factor will decrease the resulting cost values. (double, default: 10.0)
   cost_scaling_factor: 10.0
@@ -74,7 +74,7 @@ obstacle_layer:
 # The default range in meters at which to raytrace out obstacles from the map using sensor data. This can be over-ridden on a per-sensor basis. (double, default: 3.0)
   raytrace_range: 4.0
 # If false, each pixel has one of 2 states: lethal obstacle or free. If true, each pixel has one of 3 states: lethal obstacle, free, or unknown.  (bool, default: false)
-  track_unknown_space: false
+  track_unknown_space: true  #false
 # If true, the robot footprint will clear (mark as free) the space in which it travels. (bool, default: true)
   footprint_clearing_enabled: true
 # A list of observation source names separated by spaces. This defines each of the <source_name> namespaces defined below. (string, default: "")
