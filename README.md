@@ -9,6 +9,7 @@ with follow ROS packages. Back to talk about this package, we finished a **Nav g
 ## Dependency
 - [Cartographer](https://github.com/googlecartographer/cartographer)
 - [baidu_speech](https://github.com/Miaowaaaa/baidu_speech)
+- *[voice_comman](https://github.com/Miaowaaaa/voice_command_ros). You can also choose this one to replace `baidu_speech`.
 - [rviz_navigation_plugin](https://github.com/Miaowaaaa/rviz_navigation_plugin)
 - A Real Robot Driver
 -----
