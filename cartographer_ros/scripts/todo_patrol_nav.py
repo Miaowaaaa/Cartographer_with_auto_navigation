@@ -57,7 +57,7 @@ class PatrolNav():
 
         # Subscribe to the voice regnization
         self.voice_reg_sub = rospy.Subscriber("/reg_result",String,self.voice_command)
-        
+        self.voice_command_sub = rospy.Subscriber("/command_reg",String,self.command_process)
         # read points from data file
         self.locations = self.read_goals(self.patrol_file)
         self.cood = self.read_goals(self.labels_file)
@@ -81,7 +81,13 @@ class PatrolNav():
         init_pose.pose.pose = self.locations["1"]
         time.sleep(2)
         self.init_pose_pub.publish(init_pose)
-        
+    
+    def command_process(self,data):
+        """
+        process voice command
+        """
+        if "取消" in data.data:
+            self.move_base.cancel_goal()
         
     def voice_command(self,data):
         """ 
@@ -106,6 +112,10 @@ class PatrolNav():
                 elif state == GoalStatus.ABORTED:
                     rospy.loginfo("Goal merely reached code:"+str(self.goal_states[state]))
                     string_out.data = "起始点到了"
+                    self.speak_pub.publish(string_out)
+                elif state == GoalStatus.RECALLED:
+                    rospy.loginfo("Goal merely reached code:"+str(self.goal_states[state]))
+                    string_out.data = "目标点已取消"
                     self.speak_pub.publish(string_out)
                 else:
                     rospy.loginfo("Goal cannot reached code:"+str(self.goal_states[state]))
@@ -141,6 +151,10 @@ class PatrolNav():
                     elif state == GoalStatus.ABORTED:
                         rospy.loginfo("Goal failed with error code:"+str(self.goal_states[state]))
                         string_out.data = "目标点到了"
+                        self.speak_pub.publish(string_out)
+                    elif state == GoalStatus.RECALLED:
+                        rospy.loginfo("Goal merely reached code:"+str(self.goal_states[state]))
+                        string_out.data = "目标点已取消"
                         self.speak_pub.publish(string_out)
                     else:
                         rospy.loginfo("Goal cannot reached code:"+str(self.goal_states[state]))
