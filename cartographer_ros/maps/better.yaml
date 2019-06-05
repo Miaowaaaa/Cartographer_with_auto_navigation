@@ -1,0 +1,6 @@
+image: better.pgm
+resolution: 0.05
+origin: [-6.711543273925784, -17.36066055297852, 0]
+occupied_thresh: 0.51
+free_thresh: 0.49
+negate: 0

@@ -18,10 +18,10 @@ planner_patience: 3.0
 controller_patience: 2.0
 
 # Whether or not to enable the move_base recovery behaviors to attempt to clear out space.(bool, default: true)
-recovery_behavior_enabled: true
+recovery_behavior_enabled: false
 
 # Determines whether or not the robot will attempt an in-place rotation when attempting to clear out space. Note: This parameter is only used when the default recovery behaviors are in use, meaning the user has not set the recovery_behaviors parameter to anything custom.(bool, default: true)
-clearing_rotation_allowed: true
+clearing_rotation_allowed: false
 
 # Determines whether or not to shutdown the costmaps of the node when move_base is in an inactive state (bool, default: false)
 shutdown_costmaps: false
@@ -30,7 +30,7 @@ shutdown_costmaps: false
 oscillation_timeout: 5.0
 
 # How far in meters the robot must move to be considered not to be oscillating. Moving this far resets the timer counting up to the ~oscillation_timeout (double, default: 0.5)
-oscillation_distance: 0.3
+oscillation_distance: 0.10
 
 # How many times to allow for planning retries before executing recovery behaviors. A value of -1.0 corresponds to an infinite retries.(int32_t, default: -1)
 #max_planning_retries: -1

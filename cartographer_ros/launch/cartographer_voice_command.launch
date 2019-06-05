@@ -37,9 +37,12 @@
     <node pkg="cartographer_ros" type="todo_patrol_nav.py" name="auto_patrol" output="screen">
         <param name="semantic_point_file" value="/home/Miaow/labels.txt"/>
         <param name="patrol_point_file" value="/home/Miaow/loc.txt"/>
-        <param name="patrol" value="true"/>
-        <param name="voice_reg" value="false"/>
+        <param name="patrol" value="false"/>
+        <param name="voice_reg" value="true"/>
     </node>
+    
+    <!-- voice command -->
+    <include file="$(find baidu_speech)/launch/simple_voice.launch"/>
 
     <!-- rviz show -->
 	<node name="rviz" pkg="rviz" type="rviz" required="true"
